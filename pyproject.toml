@@ -9,7 +9,7 @@ readme = "README.md"
 license = { text = "MIT" }
 requires-python = ">=3.11,<4.0"
 dependencies = [
-    "langgraph>=0.6.6,<0.7.0",
+    "langgraph>=1.0.0",
     "langchain-openai>=0.1.22",
     "langchain-anthropic>=0.1.23",
     "langchain>=0.2.14",
@@ -21,7 +21,12 @@ dependencies = [
 
 
 [project.optional-dependencies]
-dev = ["mypy>=1.11.1", "ruff>=0.6.1"]
+dev = [
+    "mypy>=1.11.1",
+    "ruff>=0.6.1",
+    "langgraph-cli[inmem]>=1.0.0",
+    "pytest>=8.3.5",
+]
 
 [build-system]
 requires = ["setuptools>=73.0.0", "wheel"]
