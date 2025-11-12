@@ -69,21 +69,38 @@ class Context:
             if not f.init:
                 continue
 
-            if getattr(self, f.name) == f.default:
-                env_var_name = f.name.upper()
-                env_value = os.environ.get(env_var_name)
-                
-                if env_value is not None:
-                    # Convert environment variable value based on field type
-                    try:
-                        converted_value = self._convert_env_value(env_value, f.type, f.default)
-                        setattr(self, f.name, converted_value)
-                    except Exception:
-                        setattr(self, f.name, f.default)
+            # Always check environment variables, regardless of current value
+            env_var_name = f.name.upper()
+            env_value = os.environ.get(env_var_name)
+            
+            if env_value is not None:
+                # Convert environment variable value based on field type
+                try:
+                    converted_value = self._convert_env_value(env_value, f.type, f.default)
+                    setattr(self, f.name, converted_value)
+                except Exception:
+                    # Keep the current value if conversion fails
+                    pass
 
     def _convert_env_value(self, env_value: str, field_type: type, default_value: any) -> any:
         """Convert environment variable value to appropriate type."""
-        if field_type is bool:
+        # Get the actual type, handling Annotated types
+        import typing
+        actual_type = typing.get_origin(field_type) or field_type
+        if hasattr(typing, 'get_args') and typing.get_args(field_type):
+            args = typing.get_args(field_type)
+            if args:
+                actual_type = args[0]
+        
+        # Determine type based on default value if type annotation is complex
+        if isinstance(default_value, bool):
+            actual_type = bool
+        elif isinstance(default_value, int):
+            actual_type = int
+        elif isinstance(default_value, float):
+            actual_type = float
+        
+        if actual_type is bool or isinstance(default_value, bool):
             # Handle boolean type: support "true", "false", "1", "0", etc.
             env_value_lower = env_value.lower()
             if env_value_lower in ("true", "1", "yes", "on"):
@@ -92,14 +109,14 @@ class Context:
                 return False
             return default_value
         
-        if field_type is int:
+        if actual_type is int or isinstance(default_value, int):
             # Handle integer type
             try:
                 return int(env_value)
             except ValueError:
                 return default_value
         
-        if field_type is float:
+        if actual_type is float or isinstance(default_value, float):
             # Handle float type
             try:
                 return float(env_value)
@@ -108,4 +125,3 @@ class Context:
         
         # String and other types use directly
         return env_value
-
