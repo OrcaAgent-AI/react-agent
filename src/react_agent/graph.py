@@ -81,8 +81,8 @@ async def tool_matcher(state: State, runtime: Runtime[Context]) -> dict[str, lis
     # Extract tool names and descriptions for matching
     tool_info = []
     for tool in available_tools:
-        tool_name = getattr(tool, "name", str(tool))
-        tool_desc = getattr(tool, "description", "")
+        tool_name = getattr(tool, "__name__", str(tool))
+        tool_desc = getattr(tool, "description", "") or getattr(tool, "__doc__", "") or ""
         tool_info.append((tool_name, tool_desc))
 
     if not tool_info:
@@ -237,7 +237,7 @@ async def call_model(
         matched_tool_names = set(state.match_tools)
         filtered_tools = []
         for tool in available_tools:
-            tool_name = getattr(tool, "name", str(tool))
+            tool_name = getattr(tool, "__name__", str(tool))
             if tool_name in matched_tool_names:
                 filtered_tools.append(tool)
         available_tools = filtered_tools
