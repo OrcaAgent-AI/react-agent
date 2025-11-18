@@ -81,7 +81,7 @@ async def tool_matcher(state: State, runtime: Runtime[Context]) -> dict[str, lis
     # Extract tool names and descriptions for matching
     tool_info = []
     for tool in available_tools:
-        tool_name = getattr(tool, "__name__", str(tool))
+        tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
         tool_desc = getattr(tool, "description", "") or getattr(tool, "__doc__", "") or ""
         tool_info.append((tool_name, tool_desc))
 
@@ -160,7 +160,7 @@ async def refuse_answer(
     """
     # Get available tools information
     available_tools = await get_tools()
-    tool_names = [getattr(tool, "name", str(tool)) for tool in available_tools]
+    tool_names = [getattr(tool, "name", getattr(tool, "__name__", str(tool))) for tool in available_tools]
     tool_descriptions = [getattr(tool, "description", "") for tool in available_tools]
 
     capability_info = "\n".join(
@@ -230,20 +230,19 @@ async def call_model(
     """
     # Get available tools based on configuration
     available_tools = await get_tools()
-
+    filtered_tools = []
     # Filter tools based on match_tools if specified in state
     if state.match_tools:
         # Filter available tools to only include matched tools
         matched_tool_names = set(state.match_tools)
-        filtered_tools = []
         for tool in available_tools:
-            tool_name = getattr(tool, "__name__", str(tool))
+            tool_name = getattr(tool, "name", getattr(tool, "__name__", str(tool)))
             if tool_name in matched_tool_names:
                 filtered_tools.append(tool)
         available_tools = filtered_tools
 
     # Initialize the model with tool binding. Change the model or add more tools here.
-    model = load_chat_model(runtime.context.model).bind_tools(available_tools)
+    model = load_chat_model(runtime.context.model).bind_tools(filtered_tools)
 
     # Format the system prompt. Customize this to change the agent's behavior.
     system_message = runtime.context.system_prompt.format(
