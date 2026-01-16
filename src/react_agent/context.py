@@ -3,32 +3,97 @@
 from __future__ import annotations
 
 import json
-import os
-from dataclasses import dataclass, field, fields
+from dataclasses import dataclass, field
 from typing import Annotated
 
-from react_agent.mcp_server_configs import MCP_SERVERS
+from langgraph.runtime import Runtime
+from orcakit_sdk.context import EnvAwareConfig
 
-from . import prompts
+from .mcp_server_configs import MCP_SERVERS
+from .prompts import SYSTEM_PROMPT
+
+
+def get_context(runtime: Runtime[Context] | None) -> Context:
+    """Get context from runtime, returning default Context if runtime or context is None.
+
+    Handles the case where runtime.context is a dict (e.g., when passed via with_config)
+    by converting it to a Context object.
+
+    Args:
+        runtime: The runtime object containing context, or None.
+
+    Returns:
+        Context: The context from runtime, or a new default Context instance.
+    """
+    if runtime is None or runtime.context is None:
+        return Context()
+
+    ctx = runtime.context
+    # Handle case where context is a dict (from with_config configurable)
+    if isinstance(ctx, dict):
+        # Filter only known Context fields to avoid unexpected kwargs
+        context_fields = {
+            "system_prompt",
+            "model",
+            "max_search_results",
+            "tool_only",
+            "enable_web_search",
+            "mcp_server_configs",
+        }
+        filtered = {
+            k: v for k, v in ctx.items() if k in context_fields and v is not None
+        }
+        return Context(**filtered)
+
+    return ctx
 
 
 @dataclass(kw_only=True)
-class Context:
-    """The context for the agent."""
+class Context(EnvAwareConfig):
+    """Agent runtime configuration with environment variable support.
+
+    This class defines all configurable parameters for the agent, including
+    model selection, search settings, and tool configurations. It automatically
+    loads values from environment variables when available.
+
+    Environment Variables:
+        All field names can be set via uppercase environment variables.
+        For example, MODEL, MAX_SEARCH_RESULTS, TOOL_ONLY, etc.
+
+    Priority:
+        1. Explicitly passed parameters (highest)
+        2. Environment variables
+        3. Default values (lowest)
+
+    Example:
+        >>> # Using defaults
+        >>> ctx = Context()
+
+        >>> # Overriding with explicit values
+        >>> ctx = Context(model="openai/gpt-4", tool_only=True)
+
+        >>> # Using environment variables
+        >>> os.environ["MODEL"] = "anthropic/claude-3-5-sonnet"
+        >>> ctx = Context()  # Will use env var value
+    """
 
     system_prompt: str = field(
-        default=prompts.SYSTEM_PROMPT,
+        default=SYSTEM_PROMPT,
         metadata={
-            "description": "The system prompt to use for the agent's interactions. "
-            "This prompt sets the context and behavior for the agent."
+            "description": (
+                "The system prompt to use for the agent's interactions. "
+                "This prompt sets the context and behavior for the agent."
+            ),
         },
     )
 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
         default="compatible_openai/DeepSeek-V3-0324",
         metadata={
-            "description": "The name of the language model to use for the agent's main interactions. "
-            "Should be in the form: provider/model-name."
+            "description": (
+                "The name of the language model to use for the agent's main interactions. "
+                "Should be in the form: provider/model-name."
+            ),
         },
     )
 
@@ -42,86 +107,29 @@ class Context:
     tool_only: bool = field(
         default=False,
         metadata={
-            "description": "Whether the agent should rely completely on tools for answering questions. "
-            "When True, the agent will only use tools and not provide direct responses."
+            "description": (
+                "Whether the agent should rely completely on tools for answering questions. "
+                "When True, the agent will only use tools and not provide direct responses."
+            ),
         },
     )
 
     enable_web_search: bool = field(
         default=True,
         metadata={
-            "description": "Whether to enable web search functionality. "
-            "When False, web search tools will be disabled."
+            "description": (
+                "Whether to enable web search functionality. "
+                "When False, web search tools will be disabled."
+            ),
         },
     )
 
     mcp_server_configs: str = field(
         default=json.dumps(MCP_SERVERS, indent=2),
         metadata={
-            "description": "JSON string containing MCP server configurations. "
-            "This defines which MCP servers are available and their connection settings."
+            "description": (
+                "JSON string containing MCP server configurations. "
+                "This defines which MCP servers are available and their connection settings."
+            ),
         },
     )
-
-    def __post_init__(self) -> None:
-        """Fetch env vars for attributes that were not passed as args."""
-        for f in fields(self):
-            if not f.init:
-                continue
-
-            # Always check environment variables, regardless of current value
-            env_var_name = f.name.upper()
-            env_value = os.environ.get(env_var_name)
-            
-            if env_value is not None:
-                # Convert environment variable value based on field type
-                try:
-                    converted_value = self._convert_env_value(env_value, f.type, f.default)
-                    setattr(self, f.name, converted_value)
-                except Exception:
-                    # Keep the current value if conversion fails
-                    pass
-
-    def _convert_env_value(self, env_value: str, field_type: type, default_value: any) -> any:
-        """Convert environment variable value to appropriate type."""
-        # Get the actual type, handling Annotated types
-        import typing
-        actual_type = typing.get_origin(field_type) or field_type
-        if hasattr(typing, 'get_args') and typing.get_args(field_type):
-            args = typing.get_args(field_type)
-            if args:
-                actual_type = args[0]
-        
-        # Determine type based on default value if type annotation is complex
-        if isinstance(default_value, bool):
-            actual_type = bool
-        elif isinstance(default_value, int):
-            actual_type = int
-        elif isinstance(default_value, float):
-            actual_type = float
-        
-        if actual_type is bool or isinstance(default_value, bool):
-            # Handle boolean type: support "true", "false", "1", "0", etc.
-            env_value_lower = env_value.lower()
-            if env_value_lower in ("true", "1", "yes", "on"):
-                return True
-            if env_value_lower in ("false", "0", "no", "off"):
-                return False
-            return default_value
-        
-        if actual_type is int or isinstance(default_value, int):
-            # Handle integer type
-            try:
-                return int(env_value)
-            except ValueError:
-                return default_value
-        
-        if actual_type is float or isinstance(default_value, float):
-            # Handle float type
-            try:
-                return float(env_value)
-            except ValueError:
-                return default_value
-        
-        # String and other types use directly
-        return env_value

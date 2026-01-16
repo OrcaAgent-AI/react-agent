@@ -1,4 +1,4 @@
-# OrcaAgent React 模板
+# orcakit React 模板
 
 🇨🇳 中文 | [🇺🇸 English](README.md)
 
@@ -8,7 +8,7 @@
 
 ## 📖 项目简介
 
-**OrcaAgent** 是基于 LangGraph 二次开发的 Agent 开发框架，它深度融合 LangChain/LangGraph 的丰富生态资源，并且基于行业最佳实践做了一些必要的封装，提供了丰富的 Agent 场景化模板和脚手架工具。
+**orcakit** 是基于 LangGraph 二次开发的 Agent 开发框架，它深度融合 LangChain/LangGraph 的丰富生态资源，并且基于行业最佳实践做了一些必要的封装，提供了丰富的 Agent 场景化模板和脚手架工具。
 
 ### 🌟 核心特点
 
@@ -17,7 +17,7 @@
 
 ## 🎯 React 模板特性
 
-该项目是 OrcaAgent 提供的基于 React 模式的 Agent 模板，专门针对工具调用和快问快答场景进行了优化：
+该项目是 orcakit 提供的基于 React 模式的 Agent 模板，专门针对工具调用和快问快答场景进行了优化：
 
 ### ✨ 主要优势
 
@@ -85,16 +85,16 @@ OPENAI_MODEL_NAME=your-model-name
 
 #### 1. 下载 CLI
 ```bash
-pip install orcaagent-cli
+pip install orcakit-cli
 ```
 
 #### 2. 使用 CLI 下载现有模板
 
 下载模板 [TEMPLATE] 到路径 [PATH]：
 ```bash
-orcaagent new [PATH] [TEMPLATE]
+orcakit new [PATH] [TEMPLATE]
 ```
-也可以直接使用 `orcaagent new` 命令互动下载选择模板
+也可以直接使用 `orcakit new` 命令互动下载选择模板
 
 #### 3. 配置 .env
 - 在刚刚下载的模板目录下创建 `.env`
@@ -114,54 +114,54 @@ pip install -e .
 ```
 启动调试：
 ```bash
-orcaagent dev
+orcakit dev
 ```
 
 ### CLI 功能介绍
 
 #### 浏览 CLI 功能
 ```bash
-orcaagent --help
+orcakit --help
 ```
 
 #### 浏览现有模板
 ```bash
-orcaagent template
+orcakit template
 ```
 
 #### 利用现有模板创建项目
-1. `orcaagent new [PATH] [TEMPLATE]`
-2. 也可以直接使用 `orcaagent new` 命令互动下载选择模板
+1. `orcakit new [PATH] [TEMPLATE]`
+2. 也可以直接使用 `orcakit new` 命令互动下载选择模板
 
 #### 调试开发
 在本地启动轻量级服务器调试开发：
 ```bash
-orcaagent dev
+orcakit dev
 ```
 
-#### 利用本地 Docker 启动完整 OrcaAgent 服务
+#### 利用本地 Docker 启动完整 orcakit 服务
 *需要先在本地安装并运行 Docker*
 ```bash
-orcaagent up
+orcakit up
 ```
 
 #### 生成 Dockerfile
 ```bash
-orcaagent dockerfile [SAVE_PATH]
+orcakit dockerfile [SAVE_PATH]
 ```
-例如：`orcaagent dockerfile Dockerfile`
+例如：`orcakit dockerfile Dockerfile`
 
 #### 生成 Dockerfile 和 docker-compose.yml
 ```bash
-orcaagent dockerfile --config [CONFIG] --add-docker-compose ./Dockerfile
+orcakit dockerfile --config [CONFIG] --add-docker-compose ./Dockerfile
 ```
-例如：`orcaagent dockerfile --config orcaagent.json --add-docker-compose ./Dockerfile`
+例如：`orcakit dockerfile --config orcakit.json --add-docker-compose ./Dockerfile`
 
 #### 打包构建镜像
 ```bash
-orcaagent build --tag [TAG TEXT]
+orcakit build --tag [TAG TEXT]
 ```
-例如：`orcaagent build --tag my-agent`
+例如：`orcakit build --tag my-agent`
 
 
 ## 🔧 自定义配置
@@ -283,6 +283,6 @@ react-agent/
 ## 📞 支持与反馈
 
 如有问题或建议，请：
-- 提交 [Issue](https://github.com/OrcaAgent-AI/react-agent/issues)
+- 提交 [Issue](https://github.com/orcakit-AI/react-agent/issues)
 - 发送邮件至：jubaoliang@gmail.com
 - 加入我们的社区讨论群
